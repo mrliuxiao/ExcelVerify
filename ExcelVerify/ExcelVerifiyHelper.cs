@@ -379,37 +379,4 @@ namespace ExcelVerify
 
 
     }
-
-    /// <summary>
-    /// 配置委托
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="arg"></param>
-    public delegate void DesignDelegate(AddMapConfig addMapConfig);
-
-    public class AddMapConfig
-    {
-        public List<MapConfig> mapConfigs = null;
-        /// <summary>
-        /// 配置委托
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="arg"></param>
-        public void Add<TConfig>() where TConfig : new()
-        {
-            Type config = typeof(TConfig);
-            object Instance = Activator.CreateInstance(config);
-            mapConfigs = new List<MapConfig>();
-            foreach (FieldInfo field in config.GetFields())
-            {
-                mapConfigs.Add(new MapConfig
-                {
-                    EntityColumnName = field.Name,
-                    DataTableColumnName = field.GetValue(Instance).ToString()
-                });
-            }
-        }
-    }
-
-
 }
