@@ -1,6 +1,7 @@
 ﻿using NPOI.POIFS.Storage;
 using NPOI.SS.Formula.Functions;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -9,14 +10,25 @@ using System.Text;
 
 namespace ExcelVerify
 {
+    /// <summary>
+    /// Excel数据效验帮助类
+    /// </summary>
     public class ExcelVerifiyHelper
     {
-        ///// <summary>
-        ///// 配置委托
-        ///// </summary>
-        ///// <typeparam name="T"></typeparam>
-        ///// <param name="arg"></param>
-        //public delegate void DesignDelegate<in T>(T arg);
+
+        #region 效验Excel
+        /// <summary>
+        /// 效验Excel
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="errorRows"></param>
+        /// <returns>效验通过的DataTable</returns>
+        private DataTable VerifyToDataTable(string path, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows)
+        {
+
+
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// 效验Excel
@@ -24,30 +36,7 @@ namespace ExcelVerify
         /// <param name="path"></param>
         /// <param name="errorRows"></param>
         /// <returns>效验通过的DataTable</returns>
-        public DataTable VerifyToDataTable(string path, out List<ErrorRowInfo> errorRows)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// 效验DataTable
-        /// </summary>
-        /// <param name="dataTable"></param>
-        /// <param name="errorRows"></param>
-        /// <returns>效验通过的DataTable</returns>
-        public DataTable VerifyToDataTable(DataTable dataTable, out List<ErrorRowInfo> errorRows)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// 效验实体集合
-        /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="entities"></param>
-        /// <param name="errorRows"></param>
-        /// <returns>效验通过的DataTable</returns>
-        public DataTable VerifyToDataTable<TEntity>(List<TEntity> entities, out List<ErrorRowInfo> errorRows)
+        private DataTable VerifyToDataTable(string path, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows)
         {
             throw new NotImplementedException();
         }
@@ -59,17 +48,40 @@ namespace ExcelVerify
         /// <param name="path"></param>
         /// <param name="errorRows"></param>
         /// <returns>效验通过的实体集合</returns>
-        public List<TEntity> VerifyToEntitys<TEntity>(string path, out List<ErrorRowInfo> errorRows)
+        public List<TEntity> VerifyToEntitys<TEntity>(string path, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows) where TEntity : new()
         {
-            throw new NotImplementedException();
+            Stream stream = File.OpenRead(path);
+            DataTable dataTable = NPOIHelper.RenderDataTableFromExcel(stream, 0, 0);
+            return VerifyToEntitys<TEntity>(dataTable, mapConfigs, out errorRows);
         }
 
         /// <summary>
-        /// 效验DataTable
+        /// 效验Excel
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
-        /// <param name="dataTable"></param>
+        /// <param name="path"></param>
         /// <param name="errorRows"></param>
+        /// <returns>效验通过的实体集合</returns>
+        public List<TEntity> VerifyToEntitys<TEntity>(string path, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        {
+            List<MapConfig> mapConfigs = new List<MapConfig>();
+            AddMapConfig AddMapConfig = new AddMapConfig();
+            mapConfig(AddMapConfig);
+            mapConfigs = AddMapConfig.mapConfigs;
+            Stream stream = File.OpenRead(path);
+            DataTable dataTable = NPOIHelper.RenderDataTableFromExcel(stream, 0, 0);
+            return VerifyToEntitys<TEntity>(dataTable, mapConfigs, out errorRows);
+        }
+        #endregion
+
+        #region 效验DataTable
+        /// <summary>
+        /// 效验DataTable
+        /// </summary>
+        /// <typeparam name="TEntity">实体类型</typeparam>
+        /// <param name="dataTable">效验数据表</param>
+        /// <param name="mapConfigs">列映射配置</param>
+        /// <param name="errorRows">错误信息</param>
         /// <returns>效验通过的实体集合</returns>
         public static List<TEntity> VerifyToEntitys<TEntity>(DataTable dataTable, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows) where TEntity : new()
         {
@@ -78,7 +90,7 @@ namespace ExcelVerify
             int columnNum = 0;
             List<DataRow> errorDtRow = new List<DataRow>();
             //映射列名
-            DataTable mapDataTable = MapToDataTable(dataTable, mapConfigs);
+            DataTable mapDataTable = PropertyMapToDataTable(dataTable, mapConfigs);
             //按照列验证 为了性能
             foreach (DataColumn dataColumn in mapDataTable.Columns)
             {
@@ -113,16 +125,16 @@ namespace ExcelVerify
             });
             //重新排列数据
             errorRowInfos = errorInfos.GroupBy(info => info.Row).OrderBy(o => o.Key).Select(s =>
-           {
-               errorDtRow.Add(mapDataTable.Rows[s.Key - 1]);
-               return new ErrorRowInfo
-               {
-                   Row = s.Key,
-                   ErrorInfos = s.OrderBy(order => order.Column).ToList(),
-                   IsValid = s.Count() == 0,
-                   Massage = "未通过效验"
-               };
-           }).ToList();
+            {
+                errorDtRow.Add(mapDataTable.Rows[s.Key - 1]);
+                return new ErrorRowInfo
+                {
+                    Row = s.Key,
+                    ErrorInfos = s.OrderBy(order => order.Column).ToList(),
+                    IsValid = s.Count() == 0,
+                    Massage = "未通过效验"
+                };
+            }).ToList();
             //筛选出验证通过的数据
             errorDtRow.ForEach(row => { mapDataTable.Rows.Remove(row); });
             //转换验证通过的数据为实体
@@ -134,9 +146,25 @@ namespace ExcelVerify
         /// <summary>
         /// 效验DataTable
         /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="dataTable"></param>
-        /// <param name="errorRows"></param>
+        /// <typeparam name="TEntity">实体类型</typeparam>
+        /// <param name="dataTable">效验数据表</param>
+        /// <param name="mapConfigs">列映射配置</param>
+        /// <param name="errorRows">错误信息</param>
+        /// <returns>效验通过的DataTable</returns>
+        private static DataTable VerifyToDataTable<TEntity>(DataTable dataTable, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        {
+            List<TEntity> entities = VerifyToEntitys<TEntity>(dataTable, mapConfigs, out errorRows);
+            return ConvertMapToDataTable(entities, mapConfigs);
+
+        }
+
+        /// <summary>
+        /// 效验DataTable
+        /// </summary>
+        /// <typeparam name="TEntity">实体类型</typeparam>
+        /// <param name="dataTable">效验数据表</param>
+        /// <param name="mapConfig">列映射配置</param>
+        /// <param name="errorRows">错误信息</param>
         /// <returns>效验通过的实体集合</returns>
         public static List<TEntity> VerifyToEntitys<TEntity>(DataTable dataTable, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows) where TEntity : new()
         {
@@ -150,25 +178,105 @@ namespace ExcelVerify
         }
 
         /// <summary>
+        /// 效验DataTable
+        /// </summary>
+        /// <typeparam name="TEntity">实体类型</typeparam>
+        /// <param name="dataTable">效验数据表</param>
+        /// <param name="mapConfig">列映射配置</param>
+        /// <param name="errorRows">错误信息</param>
+        /// <returns>效验通过的DataTable</returns>
+        private static DataTable VerifyToDataTable<TEntity>(DataTable dataTable, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        {
+            List<MapConfig> mapConfigs = new List<MapConfig>();
+            AddMapConfig AddMapConfig = new AddMapConfig();
+            mapConfig(AddMapConfig);
+            mapConfigs = AddMapConfig.mapConfigs;
+            List<TEntity> entities = VerifyToEntitys<TEntity>(dataTable, mapConfigs, out errorRows);
+            return ConvertMapToDataTable(entities, mapConfigs);
+
+        }
+
+        #endregion
+
+        #region 效验实体集合
+        /// <summary>
         /// 效验实体集合
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <param name="entities"></param>
+        /// <param name="mapConfigs"></param>
         /// <param name="errorRows"></param>
         /// <returns>效验通过的实体集合</returns>
-        public List<TEntity> VerifyToEntitys<TEntity>(List<TEntity> entities, out List<ErrorRowInfo> errorRows)
+        public static List<TEntity> VerifyToEntitys<TEntity>(List<TEntity> entities, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows) where TEntity : new()
         {
-            throw new NotImplementedException();
+            DataTable dataTable = ConvertMapToDataTable(entities, mapConfigs);
+            return VerifyToEntitys<TEntity>(dataTable, mapConfigs, out errorRows);
         }
 
         /// <summary>
-        /// 效验属性值有效性
+        /// 效验实体集合
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
-        /// <param name="entity"></param>
-        /// <param name="func">回调效验方法 返回NULL 或 "" 则效验成功</param>
+        /// <param name="entities"></param>
+        /// <param name="mapConfigs"></param>
+        /// <param name="errorRows"></param>
+        /// <returns>效验通过的DataTable</returns>
+        private DataTable VerifyToDataTable<TEntity>(List<TEntity> entities, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        {
+            DataTable dataTable = ConvertMapToDataTable(entities, mapConfigs);
+            return VerifyToDataTable<TEntity>(dataTable, mapConfigs, out errorRows);
+        }
+
+        /// <summary>
+        /// 效验实体集合
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="entities"></param>
+        /// <param name="mapConfig"></param>
+        /// <param name="errorRows"></param>
+        /// <returns>效验通过的实体集合</returns>
+        public static List<TEntity> VerifyToEntitys<TEntity>(List<TEntity> entities, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        {
+            List<MapConfig> mapConfigs = new List<MapConfig>();
+            AddMapConfig AddMapConfig = new AddMapConfig();
+            mapConfig(AddMapConfig);
+            mapConfigs = AddMapConfig.mapConfigs;
+            DataTable dataTable = ConvertMapToDataTable(entities, mapConfigs);
+            return VerifyToEntitys<TEntity>(dataTable, mapConfigs, out errorRows);
+        }
+
+
+        /// <summary>
+        /// 效验实体集合
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="entities"></param>
+        /// <param name="mapConfig"></param>
+        /// <param name="errorRows"></param>
+        /// <returns>效验通过的DataTable</returns>
+        private DataTable VerifyToDataTable<TEntity>(List<TEntity> entities, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        {
+            List<MapConfig> mapConfigs = new List<MapConfig>();
+            AddMapConfig AddMapConfig = new AddMapConfig();
+            mapConfig(AddMapConfig);
+            mapConfigs = AddMapConfig.mapConfigs;
+            DataTable dataTable = ConvertMapToDataTable(entities, mapConfigs);
+            return VerifyToDataTable<TEntity>(dataTable, mapConfigs, out errorRows);
+        }
+        #endregion
+
+        #region 核心效验方法
+
+        /// <summary>
+        /// 根据实体标记的特性进行数据效验
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="values"></param>
+        /// <param name="columnName"></param>
+        /// <param name="columnNum"></param>
+        /// <param name="dbResults"></param>
         /// <returns></returns>
-        public static List<ErrorInfo> EntityAttributeValueValid<TEntity>(List<object> values, string columnName, int columnNum, out List<DbResult> dbResults)
+        private static List<ErrorInfo> EntityAttributeValueValid<TEntity>(List<object> values, string columnName, int columnNum, out List<DbResult> dbResults)
         {
             //获取实体类型
             Type entityType = typeof(TEntity);
@@ -232,13 +340,43 @@ namespace ExcelVerify
             return errorInfos;
         }
 
+        #endregion
+
+        #region Convert DataTable与Entity转换类
         /// <summary>
-        /// 转换DataTable为实体
+        /// 映射实体属性名到DataTable
         /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
         /// <param name="dataTable"></param>
         /// <param name="mapConfigs">映射</param>
         /// <returns></returns>
+        public static DataTable PropertyMapToDataTable(DataTable dataTable, List<MapConfig> mapConfigs)
+        {
+
+            DataTable newDataTable = new DataTable();
+            //映射列
+            foreach (DataColumn dataColumn in dataTable.Columns)
+            {
+                //映射实体字段到Table
+                MapConfig mapConfig = mapConfigs.Find(cfg => cfg.DataTableColumnName == dataColumn.ColumnName);
+                string dtColumnName = mapConfig == null ? dataColumn.ColumnName : mapConfig.EntityColumnName;
+                newDataTable.Columns.Add(dtColumnName, dataColumn.DataType);
+            }
+
+            //插入数据
+            foreach (DataRow dataRow in dataTable.Rows)
+            {
+                newDataTable.Rows.Add(dataRow.ItemArray);
+            }
+            return newDataTable;
+        }
+
+        /// <summary>
+        /// 通过映射配置转换DataTable为实体
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="dataTable">数据表</param>
+        /// <param name="mapConfigs">映射</param>
+        /// <returns>映射配置转换后的实体</returns>
         public static List<TEntity> ConvertMapToEntity<TEntity>(DataTable dataTable, List<MapConfig> mapConfigs) where TEntity : new()
         {
 
@@ -287,11 +425,26 @@ namespace ExcelVerify
         }
 
         /// <summary>
+        /// 通过映射配置转换DataTable为实体
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="dataTable">数据表</param>
+        /// <param name="mapConfig">映射配置</param>
+        /// <returns>映射配置转换后的实体</returns>
+        public static List<TEntity> ConvertMapToEntity<TEntity>(DataTable dataTable, DesignDelegate mapConfig) where TEntity : new()
+        {
+            List<MapConfig> mapConfigs = new List<MapConfig>();
+            AddMapConfig AddMapConfig = new AddMapConfig();
+            mapConfig(AddMapConfig);
+            mapConfigs = AddMapConfig.mapConfigs;
+            return ConvertMapToEntity<TEntity>(dataTable, mapConfigs);
+        }
+
+        /// <summary>
         /// 转换DataTable为实体
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <param name="dataTable"></param>
-        /// <param name="mapConfigs">映射</param>
         /// <returns></returns>
         public static List<TEntity> ConvertToEntity<TEntity>(DataTable dataTable) where TEntity : new()
         {
@@ -337,33 +490,58 @@ namespace ExcelVerify
         }
 
         /// <summary>
-        /// 映射实体字段到DataTable
+        /// 转换实体为DataTable
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
-        /// <param name="dataTable"></param>
-        /// <param name="mapConfigs">映射</param>
+        /// <param name="entities"></param>
         /// <returns></returns>
-        private static DataTable MapToDataTable(DataTable dataTable, List<MapConfig> mapConfigs)
+        public static DataTable ConvertToDataTable<TEntity>(List<TEntity> entities)
         {
-
-            DataTable newDataTable = new DataTable();
-            //映射列
-            foreach (DataColumn dataColumn in dataTable.Columns)
-            {
-                //映射实体字段到Table
-                MapConfig mapConfig = mapConfigs.Find(cfg => cfg.DataTableColumnName == dataColumn.ColumnName);
-                string dtColumnName = mapConfig == null ? dataColumn.ColumnName : mapConfig.EntityColumnName;
-                newDataTable.Columns.Add(dtColumnName, dataColumn.DataType);
-            }
-
-            //插入数据
-            foreach (DataRow dataRow in dataTable.Rows)
-            {
-                newDataTable.Rows.Add(dataRow.ItemArray);
-            }
-            return newDataTable;
+            var result = DataTableHelper.CreateTable<TEntity>();
+            DataTableHelper.FillData(result, entities);
+            return result;
         }
 
+        /// <summary>
+        /// 通过映射配置转换实体为DataTable
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="entities"></param>
+        /// <param name="mapConfigs"></param>
+        /// <returns>映射列名后的DataTable</returns>
+        public static DataTable ConvertMapToDataTable<TEntity>(List<TEntity> entities, List<MapConfig> mapConfigs)
+        {
+            var dataTable = DataTableHelper.CreateTable<TEntity>();
 
+            foreach (var entity in entities)
+            {
+                DataRow row = dataTable.NewRow();
+                var type = typeof(T);
+                foreach (var property in type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+                {
+                    MapConfig config = mapConfigs.Find(cfg => cfg.EntityColumnName == property.Name);
+                    string rowName = config == null ? property.Name : config.DataTableColumnName;
+                    row[rowName] = property.GetValue(entity) ?? DBNull.Value;
+                }
+            }
+            return dataTable;
+        }
+
+        /// <summary>
+        /// 通过映射配置转换实体为DataTable
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="entities">实体集合</param>
+        /// <param name="mapConfig">映射配置</param>
+        /// <returns>映射列名后的DataTable</returns>
+        public static DataTable ConvertMapToDataTable<TEntity>(List<TEntity> entities, DesignDelegate mapConfig) where TEntity : new()
+        {
+            List<MapConfig> mapConfigs = new List<MapConfig>();
+            AddMapConfig AddMapConfig = new AddMapConfig();
+            mapConfig(AddMapConfig);
+            mapConfigs = AddMapConfig.mapConfigs;
+            return ConvertMapToDataTable(entities, mapConfigs);
+        }
+        #endregion
     }
 }

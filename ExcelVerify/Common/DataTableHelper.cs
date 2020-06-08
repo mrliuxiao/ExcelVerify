@@ -108,45 +108,11 @@ namespace ExcelVerify
             FillData(result, entities);
             return result;
         }
-        public static TEntity ConvertObject<TEntity>(DataRow dr) where TEntity : new()
-        {
-
-            var propert = typeof(TEntity).GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-
-            TEntity entity = new TEntity();
-            foreach (var info in propert)
-            {
-                if (dr.Table.Columns.Contains(info.Name))
-                {
-                    try
-                    {
-                        if (!Convert.IsDBNull(dr[info.Name]))
-                        {
-                            object v = null;
-                            if (info.PropertyType.ToString().Contains("System.Nullable"))
-                            {
-                                v = Convert.ChangeType(dr[info.Name], Nullable.GetUnderlyingType(info.PropertyType));
-                            }
-                            else
-                            {
-                                v = Convert.ChangeType(dr[info.Name], info.PropertyType);
-                            }
-                            info.SetValue(entity, v, null);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("字段[" + info.Name + "]数据格式出错," + ex.Message);
-                    }
-                }
-            }
-            return entity;
-
-        }
+      
         /// <summary>
         /// 创建表
         /// </summary>
-        private static DataTable CreateTable<T>()
+        public static DataTable CreateTable<T>()
         {
             var result = new DataTable();
             var type = typeof(T);
@@ -163,7 +129,7 @@ namespace ExcelVerify
         /// <summary>
         /// 填充数据
         /// </summary>
-        private static void FillData<T>(DataTable dt, IEnumerable<T> entities)
+        public static void FillData<T>(DataTable dt, IEnumerable<T> entities)
         {
             foreach (var entity in entities)
             {
@@ -184,8 +150,6 @@ namespace ExcelVerify
             }
             return row;
         }
-
-       
 
     }
 }

@@ -10,7 +10,7 @@ using NPOI.HSSF.Util;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 
-namespace TestApp
+namespace ExcelVerify
 {
     public class NPOIHelper
     {

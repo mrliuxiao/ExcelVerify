@@ -12,17 +12,32 @@ namespace ExcelVerify
     /// </summary>
     public class DatabaseAttribute : ExcelAttribute
     {
-        public DatabaseData databaseData = null;
+      
         private readonly string keyName = "";
         private readonly Type verifyConfig = null;
+        /// <summary>
+        /// 数据库与需效验的表列信息
+        /// </summary>
+        public DatabaseData databaseData = null;
+        /// <summary>
+        /// 错误信息
+        /// </summary>
         public ErrorInfo errorInfo = null;
-
+        /// <summary>
+        /// 数据库效验特性
+        /// </summary>
+        /// <param name="entityProperty"></param>
+        /// <param name="databaseConfig"></param>
         public DatabaseAttribute(string entityProperty, Type databaseConfig)
         {
             keyName = entityProperty;
             verifyConfig = databaseConfig;
         }
-
+        /// <summary>
+        /// 从数据库加载效验数据
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
         public List<DbResult> LoadData(List<object> values)
         {
             object Instance = Activator.CreateInstance(verifyConfig);
@@ -56,7 +71,13 @@ namespace ExcelVerify
         }
 
 
-        //返回true表示此字段通过验证
+        /// <summary>
+        /// 效验
+        /// </summary>
+        /// <param name="values">数据集</param>
+        /// <param name="errorInfos">错误信息</param>
+        /// <param name="dbResults">查询数据结果</param>
+        /// <returns></returns>
         public virtual bool IsValid(List<object> values, out List<ErrorInfo> errorInfos, out List<DbResult> dbResults)
         {
             errorInfos = null;

@@ -4,19 +4,30 @@ using System.Reflection;
 
 namespace ExcelVerify
 {
+    /// <summary>
+    /// 映射配置
+    /// </summary>
     public class MapConfig
     {
+        /// <summary>
+        /// 映射datatable列
+        /// </summary>
         public string DataTableColumnName { get; set; }
+        /// <summary>
+        /// 映射实体属性
+        /// </summary>
         public string EntityColumnName { get; set; }
     }
 
     /// <summary>
-    /// 配置委托
+    /// 添加注册映射配置
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="arg"></param>
+    /// <param name="addMapConfig">添加配置类</param>
     public delegate void DesignDelegate(AddMapConfig addMapConfig);
 
+    /// <summary>
+    /// 添加注册映射配置
+    /// </summary>
     public class AddMapConfig
     {
         public List<MapConfig> mapConfigs = null;

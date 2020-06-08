@@ -10,7 +10,12 @@ namespace ExcelVerify
     /// </summary>
     public class ExcelAttribute : ValidationAttribute
     {
-        //返回true表示此字段通过验证
+        /// <summary>
+        /// 效验方法 重写此方法，效验方可获得错误信息
+        /// </summary>
+        /// <param name="value">数据</param>
+        /// <param name="errorInfo">错误信息</param>
+        /// <returns></returns>
         public virtual bool IsValid(object value, out ErrorInfo errorInfo)
         {
             errorInfo = null;
