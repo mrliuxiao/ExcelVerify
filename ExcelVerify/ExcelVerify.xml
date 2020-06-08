@@ -1,0 +1,319 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ExcelVerify</name>
+    </assembly>
+    <members>
+        <member name="M:ExcelVerify.DataTableHelper.ToDataList``1(System.Data.DataTable)">
+            <summary>
+            DataTable转成List
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="dt"></param>
+            <returns></returns>
+        </member>
+        <member name="M:ExcelVerify.DataTableHelper.ToDataDto``1(System.Data.DataTable)">
+            <summary>
+            DataTable转成Dto
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="dt"></param>
+            <returns></returns>
+        </member>
+        <member name="M:ExcelVerify.DataTableHelper.ToDataTable``1(System.Collections.Generic.List{``0})">
+            <summary>
+            将实体集合转换为DataTable
+            </summary>
+            <typeparam name="T">实体类型</typeparam>
+            <param name="entities">实体集合</param>
+        </member>
+        <member name="M:ExcelVerify.DataTableHelper.CreateTable``1">
+            <summary>
+            创建表
+            </summary>
+        </member>
+        <member name="M:ExcelVerify.DataTableHelper.FillData``1(System.Data.DataTable,System.Collections.Generic.IEnumerable{``0})">
+            <summary>
+            填充数据
+            </summary>
+        </member>
+        <member name="M:ExcelVerify.DataTableHelper.CreateRow``1(System.Data.DataTable,``0)">
+            <summary>
+            创建行
+            </summary>
+        </member>
+        <member name="T:ExcelVerify.DatabaseAttribute">
+            <summary>
+            数据库验证
+            </summary>
+        </member>
+        <member name="T:ExcelVerify.ExcelAttribute">
+            <summary>
+            excel验证特性
+            </summary>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.VerifyToDataTable(System.String,System.Collections.Generic.List{ExcelVerify.ErrorRowInfo}@)">
+            <summary>
+            效验Excel
+            </summary>
+            <param name="path"></param>
+            <param name="errorRows"></param>
+            <returns>效验通过的DataTable</returns>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.VerifyToDataTable(System.Data.DataTable,System.Collections.Generic.List{ExcelVerify.ErrorRowInfo}@)">
+            <summary>
+            效验DataTable
+            </summary>
+            <param name="dataTable"></param>
+            <param name="errorRows"></param>
+            <returns>效验通过的DataTable</returns>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.VerifyToDataTable``1(System.Collections.Generic.List{``0},System.Collections.Generic.List{ExcelVerify.ErrorRowInfo}@)">
+            <summary>
+            效验实体集合
+            </summary>
+            <typeparam name="TEntity"></typeparam>
+            <param name="entities"></param>
+            <param name="errorRows"></param>
+            <returns>效验通过的DataTable</returns>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.VerifyToEntitys``1(System.String,System.Collections.Generic.List{ExcelVerify.ErrorRowInfo}@)">
+            <summary>
+            效验Excel
+            </summary>
+            <typeparam name="TEntity"></typeparam>
+            <param name="path"></param>
+            <param name="errorRows"></param>
+            <returns>效验通过的实体集合</returns>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.VerifyToEntitys``1(System.Data.DataTable,System.Collections.Generic.List{ExcelVerify.MapConfig},System.Collections.Generic.List{ExcelVerify.ErrorRowInfo}@)">
+            <summary>
+            效验DataTable
+            </summary>
+            <typeparam name="TEntity"></typeparam>
+            <param name="dataTable"></param>
+            <param name="errorRows"></param>
+            <returns>效验通过的实体集合</returns>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.VerifyToEntitys``1(System.Data.DataTable,ExcelVerify.DesignDelegate,System.Collections.Generic.List{ExcelVerify.ErrorRowInfo}@)">
+            <summary>
+            效验DataTable
+            </summary>
+            <typeparam name="TEntity"></typeparam>
+            <param name="dataTable"></param>
+            <param name="errorRows"></param>
+            <returns>效验通过的实体集合</returns>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.VerifyToEntitys``1(System.Collections.Generic.List{``0},System.Collections.Generic.List{ExcelVerify.ErrorRowInfo}@)">
+            <summary>
+            效验实体集合
+            </summary>
+            <typeparam name="TEntity"></typeparam>
+            <param name="entities"></param>
+            <param name="errorRows"></param>
+            <returns>效验通过的实体集合</returns>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.EntityAttributeValueValid``1(System.Collections.Generic.List{System.Object},System.String,System.Int32,System.Collections.Generic.List{ExcelVerify.DbResult}@)">
+            <summary>
+            效验属性值有效性
+            </summary>
+            <typeparam name="TEntity"></typeparam>
+            <param name="entity"></param>
+            <param name="func">回调效验方法 返回NULL 或 "" 则效验成功</param>
+            <returns></returns>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.ConvertMapToEntity``1(System.Data.DataTable,System.Collections.Generic.List{ExcelVerify.MapConfig})">
+            <summary>
+            转换DataTable为实体
+            </summary>
+            <typeparam name="TEntity"></typeparam>
+            <param name="dataTable"></param>
+            <param name="mapConfigs">映射</param>
+            <returns></returns>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.ConvertToEntity``1(System.Data.DataTable)">
+            <summary>
+            转换DataTable为实体
+            </summary>
+            <typeparam name="TEntity"></typeparam>
+            <param name="dataTable"></param>
+            <param name="mapConfigs">映射</param>
+            <returns></returns>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.MapToDataTable(System.Data.DataTable,System.Collections.Generic.List{ExcelVerify.MapConfig})">
+            <summary>
+            映射实体字段到DataTable
+            </summary>
+            <typeparam name="TEntity"></typeparam>
+            <param name="dataTable"></param>
+            <param name="mapConfigs">映射</param>
+            <returns></returns>
+        </member>
+        <member name="T:ExcelVerify.DesignDelegate">
+            <summary>
+            配置委托
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="arg"></param>
+        </member>
+        <member name="M:ExcelVerify.AddMapConfig.Add``1">
+            <summary>
+            配置委托
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="arg"></param>
+        </member>
+        <member name="T:ExcelVerify.DatabaseData">
+            <summary>
+            数据库信息
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.DatabaseData.ConnectionString">
+            <summary>
+            数据库连接字符串
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.DatabaseData.PrimaryKey">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.DatabaseData.Column">
+            <summary>
+            列名
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.DatabaseData.Table">
+            <summary>
+            列名
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.DatabaseData.Server">
+            <summary>
+            地址
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.DatabaseData.Database">
+            <summary>
+            数据库
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.DatabaseData.UID">
+            <summary>
+            用户名
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.DatabaseData.PassWord">
+            <summary>
+            密码
+            </summary>
+        </member>
+        <member name="T:ExcelVerify.DbResult">
+            <summary>
+            执行Sql返回类
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.DbResult.PrimaryKey">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.DbResult.Value">
+            <summary>
+            值
+            </summary>
+        </member>
+        <member name="T:ExcelVerify.ErrorRowInfo">
+            <summary>
+            错误对象
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.ErrorRowInfo.Row">
+            <summary>
+            行
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.ErrorRowInfo.ErrorInfos">
+            <summary>
+            错误信息
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.ErrorRowInfo.Massage">
+            <summary>
+            错误描述
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.ErrorRowInfo.IsValid">
+            <summary>
+            是否有效
+            </summary>
+        </member>
+        <member name="T:ExcelVerify.ErrorInfo">
+            <summary>
+            错误对象
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.ErrorInfo.Row">
+            <summary>
+            行
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.ErrorInfo.Column">
+            <summary>
+            列
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.ErrorInfo.ColumnName">
+            <summary>
+            列名
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.ErrorInfo.TableName">
+            <summary>
+            表名
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.ErrorInfo.ErrorData">
+            <summary>
+            错误数据
+            </summary>
+        </member>
+        <member name="P:ExcelVerify.ErrorInfo.ErrorMsg">
+            <summary>
+            错误信息
+            </summary>
+        </member>
+        <member name="M:TestApp.NPOIHelper.RenderDataTableToExcel(System.Data.DataTable)">
+            <summary>
+            Datatable导出Excel
+            </summary>
+            <param name="SourceTable"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TestApp.NPOIHelper.RenderDataTableToExcel(System.Data.DataTable,System.String)">
+            <summary>
+            Datatable导出Excel
+            </summary>
+            <param name="SourceTable"></param>
+            <param name="FileName"></param>
+        </member>
+        <member name="M:TestApp.NPOIHelper.RenderDataTableFromExcel(System.IO.Stream,System.String,System.Int32)">
+            <summary>
+            导出excel为Datatable
+            </summary>
+            <param name="ExcelFileStream"></param>
+            <param name="SheetName"></param>
+            <param name="HeaderRowIndex"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TestApp.NPOIHelper.RenderDataTableFromExcel(System.IO.Stream,System.Int32,System.Int32)">
+            <summary>
+            将Excel转换为Datatable
+            </summary>
+            <param name="ExcelFileStream"></param>
+            <param name="SheetIndex"></param>
+            <param name="HeaderRowIndex"></param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>

@@ -48,6 +48,8 @@ namespace ExcelVerify
 
             foreach (string dicStr in dicList)
             {
+                if (string.IsNullOrEmpty(dicStr))
+                    continue;
                 string[] keyValue = dicStr.Split('=');
                 string key = keyValue[0].ToLower();
                 string value = keyValue[1];

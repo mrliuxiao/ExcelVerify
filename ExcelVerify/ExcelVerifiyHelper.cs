@@ -79,10 +79,10 @@ namespace ExcelVerify
             List<DataRow> errorDtRow = new List<DataRow>();
             //映射列名
             DataTable mapDataTable = MapToDataTable(dataTable, mapConfigs);
-
             //按照列验证 为了性能
             foreach (DataColumn dataColumn in mapDataTable.Columns)
             {
+                List<DbResult> dbResults = null;
                 columnNum++;
                 List<object> values = new List<object>();
 
@@ -91,7 +91,18 @@ namespace ExcelVerify
                 {
                     values.Add(dataRow[dataColumn]);
                 }
-                errorInfos.InsertRange(0, EntityAttributeValueValid<TEntity>(values, dataColumn.ColumnName, columnNum));
+                errorInfos.InsertRange(0, EntityAttributeValueValid<TEntity>(values, dataColumn.ColumnName, columnNum, out dbResults));
+                //替换外键数据为Id
+
+                if (dbResults != null)
+                {
+                    foreach (DataRow row in mapDataTable.Rows)
+                    {
+                        DbResult dbResult = dbResults.Find(res => res.Value == row[dataColumn].ToString());
+                        if (dbResult != null)
+                            row[dataColumn] = dbResult.PrimaryKey;
+                    }
+                }
             }
             //映射DataTable的列明到错误信息
             errorInfos.ForEach(s =>
@@ -102,22 +113,18 @@ namespace ExcelVerify
             });
             //重新排列数据
             errorRowInfos = errorInfos.GroupBy(info => info.Row).OrderBy(o => o.Key).Select(s =>
-            {
-                errorDtRow.Add(mapDataTable.Rows[s.Key - 1]);
-                return new ErrorRowInfo
-                {
-                    Row = s.Key,
-                    ErrorInfos = s.ToList(),
-                    IsValid = s.Count() == 0,
-                    Massage = "未通过效验"
-                };
-            }).ToList();
-
+           {
+               errorDtRow.Add(mapDataTable.Rows[s.Key - 1]);
+               return new ErrorRowInfo
+               {
+                   Row = s.Key,
+                   ErrorInfos = s.OrderBy(order => order.Column).ToList(),
+                   IsValid = s.Count() == 0,
+                   Massage = "未通过效验"
+               };
+           }).ToList();
             //筛选出验证通过的数据
-            errorDtRow.ForEach(row =>
-            {
-                mapDataTable.Rows.Remove(row);
-            });
+            errorDtRow.ForEach(row => { mapDataTable.Rows.Remove(row); });
             //转换验证通过的数据为实体
             var VerifiedEntities = ConvertToEntity<TEntity>(mapDataTable);
             errorRows = errorRowInfos;
@@ -161,9 +168,8 @@ namespace ExcelVerify
         /// <param name="entity"></param>
         /// <param name="func">回调效验方法 返回NULL 或 "" 则效验成功</param>
         /// <returns></returns>
-        public static List<ErrorInfo> EntityAttributeValueValid<TEntity>(List<object> values, string columnName, int columnNum)
+        public static List<ErrorInfo> EntityAttributeValueValid<TEntity>(List<object> values, string columnName, int columnNum, out List<DbResult> dbResults)
         {
-
             //获取实体类型
             Type entityType = typeof(TEntity);
 
@@ -171,76 +177,58 @@ namespace ExcelVerify
             PropertyInfo property = entityType.GetProperty(columnName);
 
             if (property == null)
-                throw new Exception("列名与实体不匹配，请检查是否需要映射");
+                throw new Exception($"'{columnName}'列名与实体不匹配，请检查是否需要映射");
             List<Attribute> attributes = property.GetCustomAttributes().ToList();
+            attributes = attributes.FindAll(attr =>
+                 attr.GetType().GetMethod("IsValid", new Type[] { typeof(object), typeof(ErrorInfo).MakeByRefType(), typeof(List<DbResult>).MakeByRefType() }) != null ||
+                 attr.GetType().GetMethod("IsValid", new Type[] { typeof(object), typeof(ErrorInfo).MakeByRefType() }) != null);
+            List<Attribute> commonAttributes = new List<Attribute>();
+            if (attributes != null)
+                commonAttributes = attributes.FindAll(attr => !attr.GetType().Name.Contains("Database"));
+            List<Attribute> databaseAttributes = new List<Attribute>();
+            if (attributes != null)
+                databaseAttributes = attributes.FindAll(attr => attr.GetType().Name.Contains("Database"));
+
             int rowNum = 0;
             //每行验证
             foreach (object value in values)
             {
                 rowNum++;
                 var propertyValue = value == System.DBNull.Value ? "" : value;
+
                 //遍历属性标记
-                foreach (Attribute attribute in attributes)
+                foreach (Attribute attribute in commonAttributes)
                 {
-                    //判断是否有非空验证属性
-                    if (attribute.GetType().IsAssignableFrom(typeof(NotNullAttribute)))
+                    //验证所有属性
+                    ErrorInfo errorInfo = new ErrorInfo();
+                    object[] invokeArgs = new object[] { propertyValue, errorInfo };
+                    bool isValid = (bool)attribute.GetType().GetMethod("IsValid", new Type[] { typeof(object), typeof(ErrorInfo).MakeByRefType() }).Invoke(attribute, invokeArgs);
+                    if (!isValid)
                     {
-                        NotNullAttribute attr = ((NotNullAttribute)attribute);
-                        ErrorInfo errorInfo = null;
-                        if (!attr.IsValid(propertyValue, out errorInfo))
-                        {
-                            errorInfo.ColumnName = columnName;
-                            errorInfo.Column = columnNum;
-                            errorInfo.Row = rowNum;
-                            errorInfos.Add(errorInfo);
-                        }
-                    }
-                    //判断是否有长度验证属性
-                    if (attribute.GetType().IsAssignableFrom(typeof(StrMaxLenAttribute)))
-                    {
-                        StrMaxLenAttribute attr = ((StrMaxLenAttribute)attribute);
-                        ErrorInfo errorInfo = null;
-                        if (!attr.IsValid(propertyValue, out errorInfo))
-                        {
-                            errorInfo.ColumnName = columnName;
-                            errorInfo.Column = columnNum;
-                            errorInfo.Row = rowNum;
-                            errorInfos.Add(errorInfo);
-                        }
-                    }
-                    //判断是否有长度验证属性
-                    if (attribute.GetType().IsAssignableFrom(typeof(NoSpaceAttribute)))
-                    {
-                        NoSpaceAttribute attr = ((NoSpaceAttribute)attribute);
-                        ErrorInfo errorInfo = null;
-                        if (!attr.IsValid(propertyValue, out errorInfo))
-                        {
-                            errorInfo.ColumnName = columnName;
-                            errorInfo.Column = columnNum;
-                            errorInfo.Row = rowNum;
-                            errorInfos.Add(errorInfo);
-                        }
+                        errorInfo = (ErrorInfo)invokeArgs[1];
+                        errorInfo.ColumnName = columnName;
+                        errorInfo.Column = columnNum;
+                        errorInfo.Row = rowNum;
+                        errorInfos.Add(errorInfo);
                     }
                 }
             }
-
+            dbResults = null;
             //去数据库验证 一次性验证所有列
-            foreach (Attribute attribute in attributes)
+            foreach (Attribute attribute in databaseAttributes)
             {
-                //判断是否有长度验证属性
-                if (attribute.GetType().IsAssignableFrom(typeof(DatabaseHaveAttribute)))
+                //验证所有属性
+                List<ErrorInfo> errors = new List<ErrorInfo>();
+                object[] invokeArgs = new object[] { values, errors, dbResults };
+                bool isValid = (bool)attribute.GetType().GetMethod("IsValid", new Type[] { typeof(List<object>), typeof(List<ErrorInfo>).MakeByRefType(), typeof(List<DbResult>).MakeByRefType() }).Invoke(attribute, invokeArgs);
+                dbResults = (List<DbResult>)invokeArgs[2];
+                if (!isValid)
                 {
-                    DatabaseHaveAttribute attr = ((DatabaseHaveAttribute)attribute);
-                    List<ErrorInfo> errors = new List<ErrorInfo>();
-                    if (!attr.IsValid(values, out errors))
-                    {
-                        errors.ForEach(info => info.Column = columnNum);
-                        errorInfos.InsertRange(0, errors);
-                    }
+                    errors = (List<ErrorInfo>)invokeArgs[1];
+                    errors.ForEach(info => info.Column = columnNum);
+                    errorInfos.InsertRange(0, errors);
                 }
             }
-
-
             return errorInfos;
         }
 
@@ -251,7 +239,7 @@ namespace ExcelVerify
         /// <param name="dataTable"></param>
         /// <param name="mapConfigs">映射</param>
         /// <returns></returns>
-        private static List<TEntity> ConvertMapToEntity<TEntity>(DataTable dataTable, List<MapConfig> mapConfigs) where TEntity : new()
+        public static List<TEntity> ConvertMapToEntity<TEntity>(DataTable dataTable, List<MapConfig> mapConfigs) where TEntity : new()
         {
 
             var properts = typeof(TEntity).GetProperties(); ;
@@ -305,7 +293,7 @@ namespace ExcelVerify
         /// <param name="dataTable"></param>
         /// <param name="mapConfigs">映射</param>
         /// <returns></returns>
-        private static List<TEntity> ConvertToEntity<TEntity>(DataTable dataTable) where TEntity : new()
+        public static List<TEntity> ConvertToEntity<TEntity>(DataTable dataTable) where TEntity : new()
         {
 
             var properts = typeof(TEntity).GetProperties(); ;
@@ -339,8 +327,7 @@ namespace ExcelVerify
                         }
                         catch (Exception ex)
                         {
-                            throw new Exception($"字段[{ dtColumnName }]数据类型出错,{ex.Message}");
-
+                            throw new Exception($"字段[{ dtColumnName }]数据类型出错,请检查是否没有映射主外键数据！{ex.Message}");
                         }
                     }
                 }

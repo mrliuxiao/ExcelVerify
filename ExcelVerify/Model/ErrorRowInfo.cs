@@ -47,6 +47,10 @@ namespace ExcelVerify
         /// </summary>
         public string TableName { get; set; }
         /// <summary>
+        /// 错误数据
+        /// </summary>
+        public string ErrorData { get; set; }
+        /// <summary>
         /// 错误信息
         /// </summary>
         public string ErrorMsg { get; set; }
