@@ -61,12 +61,12 @@ namespace ExcelTest
 
     public class TestEntity
     {
-        [NotNull]
+        //[NotNull]
         public int Id { get; set; }
 
-        [StrMaxLen(0, 50)]
-        [NoSpace]
-        [DatabaseHave("Name", typeof(VerifyConfig))]
+        //[StrMaxLen(0, 50)]
+        //[NoSpace]
+        //[DatabaseHave("Name", typeof(VerifyConfig))]
         public string Name { get; set; }
         public bool Sex { get; set; }
 
