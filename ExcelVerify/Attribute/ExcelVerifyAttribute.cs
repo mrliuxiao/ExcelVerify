@@ -15,7 +15,7 @@ namespace ExcelVerify
     /// <summary>
     /// 不能为null、""
     /// </summary>
-    public class NotNullAttribute : ExcelAttribute
+    public class ExcelNoNullAttribute : ExcelAttribute
     {
         /// <summary>
         /// 效验效验数据 
@@ -47,7 +47,7 @@ namespace ExcelVerify
     /// <summary>
     /// 字符串中间不能包含空格
     /// </summary>
-    public class NoSpaceAttribute : ExcelAttribute
+    public class ExcelNoSpaceAttribute : ExcelAttribute
     {
         private static readonly Regex noSpaceRegex = new Regex(@"^[^\s]+$", RegexOptions.Compiled);
 
@@ -84,18 +84,18 @@ namespace ExcelVerify
     #endregion
 
     #region 字符串长度验证
-   
+
     /// <summary>
     /// 长度验证
     /// </summary>
-    public class StrLengthLenAttribute : ExcelAttribute
+    public class ExcelStrLengthAttribute : ExcelAttribute
     {
         /// <summary>
         /// 长度验证
         /// </summary>
         /// <param name="minLength">最小长度</param>
         /// <param name="maxLength">最大长度</param>
-        public StrLengthLenAttribute(int minLength, int maxLength)
+        public ExcelStrLengthAttribute(int minLength, int maxLength)
         {
             maximumLength = maxLength;
             minimumLength = minLength;
@@ -139,14 +139,14 @@ namespace ExcelVerify
     /// <summary>
     /// 不能与数据库重复
     /// </summary>
-    public class NoRepeatToDatabaseAttribute : DatabaseAttribute
+    public class ExcelNoRepeatToDatabaseAttribute : DatabaseAttribute
     {
         /// <summary>
         /// 传参
         /// </summary>
         /// <param name="entityProperty">实体属性名</param>
         /// <param name="databaseConfig">数据库连接字符串等信息</param>
-        public NoRepeatToDatabaseAttribute(string entityProperty, Type databaseConfig) : base(entityProperty, databaseConfig) { }
+        public ExcelNoRepeatToDatabaseAttribute(string entityProperty, Type databaseConfig) : base(entityProperty, databaseConfig) { }
 
         /// <summary>
         /// 效验
@@ -209,14 +209,14 @@ namespace ExcelVerify
     /// <summary>
     /// 数据库验证是否存在 不获取主键Id
     /// </summary>
-    public class DatabaseHaveAttribute : DatabaseAttribute
+    public class ExcelDatabaseHaveAttribute : DatabaseAttribute
     {
         /// <summary>
         /// 数据库是否存在
         /// </summary>
         /// <param name="entityProperty">实体属性</param>
         /// <param name="databaseConfig">数据库配置</param>
-        public DatabaseHaveAttribute(string entityProperty, Type databaseConfig) : base(entityProperty, databaseConfig) { }
+        public ExcelDatabaseHaveAttribute(string entityProperty, Type databaseConfig) : base(entityProperty, databaseConfig) { }
 
         /// <summary>
         /// 效验
@@ -263,14 +263,14 @@ namespace ExcelVerify
     /// <summary>
     /// 数据库验证是否存在 并获取主键
     /// </summary>
-    public class DatabaseHaveGetKeyAttribute : DatabaseAttribute
+    public class ExcelDatabaseHaveGetKeyAttribute : DatabaseAttribute
     {
         /// <summary>
         /// 数据库验证是否存在 并获取主键
         /// </summary>
         /// <param name="entityProperty">实体属性</param>
         /// <param name="databaseConfig">数据库配置</param>
-        public DatabaseHaveGetKeyAttribute(string entityProperty, Type databaseConfig) : base(entityProperty, databaseConfig) { }
+        public ExcelDatabaseHaveGetKeyAttribute(string entityProperty, Type databaseConfig) : base(entityProperty, databaseConfig) { }
 
         /// <summary>
         /// 效验
@@ -313,4 +313,79 @@ namespace ExcelVerify
         }
     }
 
+    /// <summary>
+    /// 数据库验证是否存在 并获取主键 逗号 分隔转 Ids
+    /// </summary>
+    public class ExcelDatabaseHaveGetIdsAttribute : DatabaseAttribute
+    {
+        /// <summary>
+        /// 数据库验证是否存在 并获取主键
+        /// </summary>
+        /// <param name="entityProperty">实体属性</param>
+        /// <param name="databaseConfig">数据库配置</param>
+        public ExcelDatabaseHaveGetIdsAttribute(string entityProperty, Type databaseConfig) : base(entityProperty, databaseConfig) { }
+
+        /// <summary>
+        /// 效验
+        /// </summary>
+        /// <param name="values">数据集</param>
+        /// <param name="errorInfos">错误信息</param>
+        /// <param name="dbResults">查询数据结果</param>
+        /// <returns></returns>
+        public override bool IsValid(List<object> values, out List<ErrorInfo> errorInfos, out List<DbResult> dbResults)
+        {
+            List<string> datas = new List<string>();
+            foreach (string value in values)
+            {
+                //Value格式 "1,2,3"
+                datas.InsertRange(0, value.Split(',').ToList());
+            }
+
+            //加载数据库数据 
+            dbResults = LoadData(datas);
+            errorInfos = new List<ErrorInfo>();
+            //检查数据加载是否正常
+            if (base.errorInfo != null)
+            {
+                errorInfos.Add(base.errorInfo);
+                return false;
+            }
+            List<DbResult> newDBResults = new List<DbResult>();
+
+            int row = 0;
+            //数据验证
+            foreach (string value in values)
+            {
+                DbResult dbResult = new DbResult();
+                dbResult.Value = value;
+                //Value格式 "1,2,3"
+                List<string> valueList = value.Split(',').ToList();
+                row++;
+                int i= 0;
+                foreach (string data in valueList)
+                {
+                    i++;
+                    if (!dbResults.Any(res => res.Value == data))
+                    {
+                        errorInfos.Add(new ErrorInfo
+                        {
+                            Row = row,
+                            ColumnName = databaseData.Column,
+                            TableName = databaseData.Table,
+                            ErrorData = value,
+                            ErrorMsg = $"'{value}'数据库不存在此数据"
+                        });
+                    }
+                    else
+                    {
+                        dbResult.PrimaryKey += $"{dbResults.Find(res => res.Value == data).PrimaryKey}{(valueList.Count() == i ? "" : ",")}";
+                    }
+                }
+                newDBResults.Add(dbResult);
+            }
+            //如果不想映射主键数据 清空即可
+            dbResults = newDBResults;
+            return errorInfos.Count == 0;
+        }
+    }
 }

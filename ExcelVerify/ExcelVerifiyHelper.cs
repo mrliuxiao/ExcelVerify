@@ -15,62 +15,105 @@ namespace ExcelVerify
     /// </summary>
     public class ExcelVerifiyHelper
     {
+        #region 导出Excel
 
-        #region 效验Excel
         /// <summary>
-        /// 效验Excel
+        /// 导出Excel
         /// </summary>
-        /// <param name="path"></param>
-        /// <param name="errorRows"></param>
-        /// <returns>效验通过的DataTable</returns>
-        private DataTable VerifyToDataTable(string path, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows)
+        /// <param name="dataTable"></param>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static void DataTableToExcel(DataTable dataTable, string fileName)
         {
-
-
-            throw new NotImplementedException();
+            NPOIHelper.TableToExcel(dataTable, fileName);
         }
 
         /// <summary>
-        /// 效验Excel
-        /// </summary>
-        /// <param name="path"></param>
-        /// <param name="errorRows"></param>
-        /// <returns>效验通过的DataTable</returns>
-        private DataTable VerifyToDataTable(string path, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// 效验Excel
+        /// 导出Excel
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
-        /// <param name="path"></param>
-        /// <param name="errorRows"></param>
-        /// <returns>效验通过的实体集合</returns>
-        public List<TEntity> VerifyToEntitys<TEntity>(string path, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        /// <param name="entities"></param>
+        /// <param name="mapConfigs"></param>
+        /// <param name="fileName"></param>
+        public static void EntityToExcel<TEntity>(List<TEntity> entities, List<MapConfig> mapConfigs, string fileName)where TEntity :new()
         {
-            Stream stream = File.OpenRead(path);
-            DataTable dataTable = NPOIHelper.RenderDataTableFromExcel(stream, 0, 0);
-            return VerifyToEntitys<TEntity>(dataTable, mapConfigs, out errorRows);
+            DataTable newDataTable = ConvertMapToDataTable(entities, mapConfigs);
+            NPOIHelper.TableToExcel(newDataTable, fileName);
         }
 
         /// <summary>
-        /// 效验Excel
+        /// 导出Excel
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
-        /// <param name="path"></param>
-        /// <param name="errorRows"></param>
-        /// <returns>效验通过的实体集合</returns>
-        public List<TEntity> VerifyToEntitys<TEntity>(string path, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        /// <param name="entities"></param>
+        /// <param name="mapConfig"></param>
+        /// <param name="fileName"></param>
+        public static void EntityToExcel<TEntity>(List<TEntity> entities, DesignDelegate mapConfig, string fileName) where TEntity : new()
         {
             List<MapConfig> mapConfigs = new List<MapConfig>();
             AddMapConfig AddMapConfig = new AddMapConfig();
             mapConfig(AddMapConfig);
             mapConfigs = AddMapConfig.mapConfigs;
-            Stream stream = File.OpenRead(path);
-            DataTable dataTable = NPOIHelper.RenderDataTableFromExcel(stream, 0, 0);
+            DataTable newDataTable = ConvertMapToDataTable(entities, mapConfigs);
+            NPOIHelper.TableToExcel(newDataTable, fileName);
+        }
+
+        #endregion
+
+        #region 效验Excel
+        /// <summary>
+        /// 效验Excel
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="mapConfigs"></param>
+        /// <param name="errorRows"></param>
+        /// <returns>效验通过的DataTable</returns>
+        public static DataTable VerifyToDataTable<TEntity>(string fileName, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        {
+            DataTable dataTable = NPOIHelper.ExcelToTable(fileName);
+            return VerifyToDataTable<TEntity>(dataTable, mapConfigs, out errorRows);
+        }
+
+        /// <summary>
+        /// 效验Excel
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="mapConfig"></param>
+        /// <param name="errorRows"></param>
+        /// <returns>效验通过的DataTable</returns>
+        public static DataTable VerifyToDataTable<TEntity>(string fileName, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        {
+            DataTable dataTable = NPOIHelper.ExcelToTable(fileName);
+            return VerifyToDataTable<TEntity>(dataTable, mapConfig, out errorRows);
+        }
+
+        /// <summary>
+        /// 效验Excel
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="fileName"></param>
+        /// <param name="mapConfigs"></param>
+        /// <param name="errorRows"></param>
+        /// <returns>效验通过的实体集合</returns>
+        public static List<TEntity> VerifyToEntitys<TEntity>(string fileName, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        {
+            DataTable dataTable = NPOIHelper.ExcelToTable(fileName);
             return VerifyToEntitys<TEntity>(dataTable, mapConfigs, out errorRows);
+        }
+
+        /// <summary>
+        /// 效验Excel
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="fileName"></param>
+        /// <param name="mapConfig"></param>
+        /// <param name="errorRows"></param>
+        /// <returns>效验通过的实体集合</returns>
+        public static List<TEntity> VerifyToEntitys<TEntity>(string fileName, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        {
+            Stream stream = File.OpenRead(fileName);
+            DataTable dataTable = NPOIHelper.ExcelToTable(fileName);
+            return VerifyToEntitys<TEntity>(dataTable, mapConfig, out errorRows);
         }
         #endregion
 
@@ -151,7 +194,7 @@ namespace ExcelVerify
         /// <param name="mapConfigs">列映射配置</param>
         /// <param name="errorRows">错误信息</param>
         /// <returns>效验通过的DataTable</returns>
-        private static DataTable VerifyToDataTable<TEntity>(DataTable dataTable, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        public static DataTable VerifyToDataTable<TEntity>(DataTable dataTable, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows) where TEntity : new()
         {
             List<TEntity> entities = VerifyToEntitys<TEntity>(dataTable, mapConfigs, out errorRows);
             return ConvertMapToDataTable(entities, mapConfigs);
@@ -185,7 +228,7 @@ namespace ExcelVerify
         /// <param name="mapConfig">列映射配置</param>
         /// <param name="errorRows">错误信息</param>
         /// <returns>效验通过的DataTable</returns>
-        private static DataTable VerifyToDataTable<TEntity>(DataTable dataTable, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        public static DataTable VerifyToDataTable<TEntity>(DataTable dataTable, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows) where TEntity : new()
         {
             List<MapConfig> mapConfigs = new List<MapConfig>();
             AddMapConfig AddMapConfig = new AddMapConfig();
@@ -221,7 +264,7 @@ namespace ExcelVerify
         /// <param name="mapConfigs"></param>
         /// <param name="errorRows"></param>
         /// <returns>效验通过的DataTable</returns>
-        private DataTable VerifyToDataTable<TEntity>(List<TEntity> entities, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        public static DataTable VerifyToDataTable<TEntity>(List<TEntity> entities, List<MapConfig> mapConfigs, out List<ErrorRowInfo> errorRows) where TEntity : new()
         {
             DataTable dataTable = ConvertMapToDataTable(entities, mapConfigs);
             return VerifyToDataTable<TEntity>(dataTable, mapConfigs, out errorRows);
@@ -254,7 +297,7 @@ namespace ExcelVerify
         /// <param name="mapConfig"></param>
         /// <param name="errorRows"></param>
         /// <returns>效验通过的DataTable</returns>
-        private DataTable VerifyToDataTable<TEntity>(List<TEntity> entities, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows) where TEntity : new()
+        public static DataTable VerifyToDataTable<TEntity>(List<TEntity> entities, DesignDelegate mapConfig, out List<ErrorRowInfo> errorRows) where TEntity : new()
         {
             List<MapConfig> mapConfigs = new List<MapConfig>();
             AddMapConfig AddMapConfig = new AddMapConfig();
@@ -511,18 +554,29 @@ namespace ExcelVerify
         /// <returns>映射列名后的DataTable</returns>
         public static DataTable ConvertMapToDataTable<TEntity>(List<TEntity> entities, List<MapConfig> mapConfigs)
         {
-            var dataTable = DataTableHelper.CreateTable<TEntity>();
-
+            var type = typeof(TEntity);
+            DataTable dataTable = new DataTable();
+            //创建表
+            foreach (var property in type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+            {
+                var propertyType = property.PropertyType;
+                if ((propertyType.IsGenericType) && (propertyType.GetGenericTypeDefinition() == typeof(Nullable<>)))
+                    propertyType = propertyType.GetGenericArguments()[0];
+                MapConfig config = mapConfigs.Find(cfg => cfg.EntityColumnName == property.Name);
+                string rowName = config == null ? property.Name : config.DataTableColumnName;
+                dataTable.Columns.Add(rowName, propertyType);
+            }
+            //填充数据
             foreach (var entity in entities)
             {
                 DataRow row = dataTable.NewRow();
-                var type = typeof(T);
                 foreach (var property in type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
                 {
                     MapConfig config = mapConfigs.Find(cfg => cfg.EntityColumnName == property.Name);
                     string rowName = config == null ? property.Name : config.DataTableColumnName;
                     row[rowName] = property.GetValue(entity) ?? DBNull.Value;
                 }
+                dataTable.Rows.Add(row);
             }
             return dataTable;
         }

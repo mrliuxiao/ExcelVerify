@@ -12,7 +12,7 @@ namespace ExcelVerify
     /// </summary>
     public class DatabaseAttribute : ExcelAttribute
     {
-      
+
         private readonly string keyName = "";
         private readonly Type verifyConfig = null;
         /// <summary>
@@ -57,19 +57,62 @@ namespace ExcelVerify
                 };
                 errorInfo.ErrorMsg = "数据库连接配置错误";
             }
-            List<DbResult> dbResult = null;
+            List<DbResult> dbResult = new List<DbResult>();
+            if (values == null || values.Count == 0)
+            {
+                return dbResult;
+            }
             //获取表名
             using (SqlConnection connection = new SqlConnection(databaseData.ConnectionString))
             {
                 string where = "";
                 values.ForEach(value => where += $" {databaseData.Column} = '{value}' {(values.Last() == value ? "" : "OR")} ");
-
                 string Sql = string.Format($@"SELECT {databaseData.PrimaryKey} AS PrimaryKey, {databaseData.Column} AS Value FROM {databaseData.Table} WHERE {where};");
                 dbResult = connection.Query<DbResult>(Sql).ToList();
             }
             return dbResult;
         }
 
+        /// <summary>
+        /// 从数据库加载效验数据
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        public List<DbResult> LoadData(List<string> values)
+        {
+            object Instance = Activator.CreateInstance(verifyConfig);
+            var field = verifyConfig.GetField(keyName);
+            if (field == null)
+                throw new Exception($"{keyName},没有配置数据库信息");
+            string connect = field.GetValue(Instance).ToString();
+            //解析
+            databaseData = DatabaseData.ConverToObject(connect);
+
+            if (databaseData == null || string.IsNullOrEmpty(databaseData.ConnectionString))
+            {
+                ErrorInfo errorInfo = new ErrorInfo
+                {
+                    ColumnName = databaseData.Column,
+                    TableName = databaseData.Table
+                };
+                errorInfo.ErrorMsg = "数据库连接配置错误";
+            }
+            List<DbResult> dbResult = new List<DbResult>();
+            if (values == null || values.Count == 0)
+            {
+                return dbResult;
+            }
+            //获取表名
+            using (SqlConnection connection = new SqlConnection(databaseData.ConnectionString))
+            {
+                int i = 0;
+                string where = "";
+                values.ForEach(value => { i++; where += $" {databaseData.Column} = '{value}' {(values.Count() == i ? "" : "OR")} "; });
+                string Sql = string.Format($@"SELECT {databaseData.PrimaryKey} AS PrimaryKey, {databaseData.Column} AS Value FROM {databaseData.Table} WHERE {where};");
+                dbResult = connection.Query<DbResult>(Sql).ToList();
+            }
+            return dbResult;
+        }
 
         /// <summary>
         /// 效验
