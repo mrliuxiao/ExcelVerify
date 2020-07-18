@@ -31,11 +31,38 @@ namespace ExcelVerify
         /// <summary>
         /// 导出Excel
         /// </summary>
+        /// <param name="dataTable"></param>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static void DataTableToExcel(DataTable dataTable, List<MapConfig> mapConfigs, string fileName)
+        {
+            DataTable newDataTable = PropertyMapToDataTable(dataTable, mapConfigs);
+            NPOIHelper.TableToExcel(newDataTable, fileName);
+            NPOIHelper.TableToExcel(dataTable, fileName);
+        }
+        /// <summary>
+        /// 导出Excel
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static void DataTableToExcel(DataTable dataTable, DesignDelegate mapConfig, string fileName)
+        {
+            List<MapConfig> mapConfigs = new List<MapConfig>();
+            AddMapConfig AddMapConfig = new AddMapConfig();
+            mapConfig(AddMapConfig);
+            mapConfigs = AddMapConfig.mapConfigs;
+            DataTable newDataTable = PropertyMapToDataTable(dataTable, mapConfigs);
+            NPOIHelper.TableToExcel(newDataTable, fileName);
+        }
+        /// <summary>
+        /// 导出Excel
+        /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <param name="entities"></param>
         /// <param name="mapConfigs"></param>
         /// <param name="fileName"></param>
-        public static void EntityToExcel<TEntity>(List<TEntity> entities, List<MapConfig> mapConfigs, string fileName)where TEntity :new()
+        public static void EntityToExcel<TEntity>(List<TEntity> entities, List<MapConfig> mapConfigs, string fileName) where TEntity : new()
         {
             DataTable newDataTable = ConvertMapToDataTable(entities, mapConfigs);
             NPOIHelper.TableToExcel(newDataTable, fileName);
@@ -326,13 +353,12 @@ namespace ExcelVerify
 
             List<ErrorInfo> errorInfos = new List<ErrorInfo>();
             PropertyInfo property = entityType.GetProperty(columnName);
-
             if (property == null)
                 throw new Exception($"'{columnName}'列名与实体不匹配，请检查是否需要映射");
             List<Attribute> attributes = property.GetCustomAttributes().ToList();
             attributes = attributes.FindAll(attr =>
-                 attr.GetType().GetMethod("IsValid", new Type[] { typeof(object), typeof(ErrorInfo).MakeByRefType(), typeof(List<DbResult>).MakeByRefType() }) != null ||
-                 attr.GetType().GetMethod("IsValid", new Type[] { typeof(object), typeof(ErrorInfo).MakeByRefType() }) != null);
+                 attr.GetType().GetMethod("IsValidExcel", new Type[] { typeof(object), typeof(ErrorInfo).MakeByRefType(), typeof(List<DbResult>).MakeByRefType() }) != null ||
+                 attr.GetType().GetMethod("IsValidExcel", new Type[] { typeof(object), typeof(ErrorInfo).MakeByRefType() }) != null);
             List<Attribute> commonAttributes = new List<Attribute>();
             if (attributes != null)
                 commonAttributes = attributes.FindAll(attr => !attr.GetType().Name.Contains("Database"));
@@ -353,7 +379,7 @@ namespace ExcelVerify
                     //验证所有属性
                     ErrorInfo errorInfo = new ErrorInfo();
                     object[] invokeArgs = new object[] { propertyValue, errorInfo };
-                    bool isValid = (bool)attribute.GetType().GetMethod("IsValid", new Type[] { typeof(object), typeof(ErrorInfo).MakeByRefType() }).Invoke(attribute, invokeArgs);
+                    bool isValid = (bool)attribute.GetType().GetMethod("IsValidExcel", new Type[] { typeof(object), typeof(ErrorInfo).MakeByRefType() }).Invoke(attribute, invokeArgs);
                     if (!isValid)
                     {
                         errorInfo = (ErrorInfo)invokeArgs[1];
@@ -371,7 +397,7 @@ namespace ExcelVerify
                 //验证所有属性
                 List<ErrorInfo> errors = new List<ErrorInfo>();
                 object[] invokeArgs = new object[] { values, errors, dbResults };
-                bool isValid = (bool)attribute.GetType().GetMethod("IsValid", new Type[] { typeof(List<object>), typeof(List<ErrorInfo>).MakeByRefType(), typeof(List<DbResult>).MakeByRefType() }).Invoke(attribute, invokeArgs);
+                bool isValid = (bool)attribute.GetType().GetMethod("IsValidExcel", new Type[] { typeof(List<object>), typeof(List<ErrorInfo>).MakeByRefType(), typeof(List<DbResult>).MakeByRefType() }).Invoke(attribute, invokeArgs);
                 dbResults = (List<DbResult>)invokeArgs[2];
                 if (!isValid)
                 {
@@ -386,6 +412,7 @@ namespace ExcelVerify
         #endregion
 
         #region Convert DataTable与Entity转换类
+
         /// <summary>
         /// 映射实体属性名到DataTable
         /// </summary>
@@ -399,9 +426,58 @@ namespace ExcelVerify
             //映射列
             foreach (DataColumn dataColumn in dataTable.Columns)
             {
-                //映射实体字段到Table
-                MapConfig mapConfig = mapConfigs.Find(cfg => cfg.DataTableColumnName == dataColumn.ColumnName);
-                string dtColumnName = mapConfig == null ? dataColumn.ColumnName : mapConfig.EntityColumnName;
+                // 映射实体字段到Table
+                MapConfig Config = mapConfigs.Find(cfg => cfg.DataTableColumnName == dataColumn.ColumnName);
+                string dtColumnName = dataColumn.ColumnName;
+                if (Config != null)
+                {
+                    dtColumnName = Config == null ? dataColumn.ColumnName : Config.EntityColumnName;
+
+                }
+                else
+                {
+                    Config = mapConfigs.Find(cfg => cfg.EntityColumnName == dataColumn.ColumnName);
+                    dtColumnName = Config == null ? dataColumn.ColumnName : Config.DataTableColumnName;
+                }
+                newDataTable.Columns.Add(dtColumnName, dataColumn.DataType);
+            }
+
+            //插入数据
+            foreach (DataRow dataRow in dataTable.Rows)
+            {
+                newDataTable.Rows.Add(dataRow.ItemArray);
+            }
+            return newDataTable;
+        }
+
+        /// <summary>
+        /// 映射实体属性名到DataTable
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <param name="mapConfig">映射</param>
+        /// <returns></returns>
+        public static DataTable PropertyMapToDataTable(DataTable dataTable, DesignDelegate mapConfig)
+        {
+            List<MapConfig> mapConfigs = new List<MapConfig>();
+            AddMapConfig AddMapConfig = new AddMapConfig();
+            mapConfig(AddMapConfig);
+            mapConfigs = AddMapConfig.mapConfigs;
+            DataTable newDataTable = new DataTable();
+            //映射列
+            foreach (DataColumn dataColumn in dataTable.Columns)
+            {
+                // 映射实体字段到Table
+                MapConfig Config = mapConfigs.Find(cfg => cfg.DataTableColumnName == dataColumn.ColumnName);
+                string dtColumnName = dataColumn.ColumnName;
+                if (Config != null)
+                {
+                    dtColumnName = Config == null ? dataColumn.ColumnName : Config.EntityColumnName;
+                }
+                else
+                {
+                    Config = mapConfigs.Find(cfg => cfg.EntityColumnName == dataColumn.ColumnName);
+                    dtColumnName = Config == null ? dataColumn.ColumnName : Config.DataTableColumnName;
+                }
                 newDataTable.Columns.Add(dtColumnName, dataColumn.DataType);
             }
 
@@ -512,7 +588,10 @@ namespace ExcelVerify
                                 object v = null;
                                 if (property.PropertyType.ToString().Contains("System.Nullable"))
                                 {
-                                    v = Convert.ChangeType(dataRow[dtColumnName], Nullable.GetUnderlyingType(property.PropertyType));
+                                    if (property.PropertyType == typeof(int?) && string.IsNullOrEmpty(dataRow[dtColumnName].ToString()))
+                                        v = null;
+                                    else
+                                        v = Convert.ChangeType(dataRow[dtColumnName], Nullable.GetUnderlyingType(property.PropertyType));
                                 }
                                 else
                                 {

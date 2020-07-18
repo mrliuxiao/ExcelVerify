@@ -327,6 +327,22 @@
             <param name="fileName"></param>
             <returns></returns>
         </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.DataTableToExcel(System.Data.DataTable,System.Collections.Generic.List{ExcelVerify.MapConfig},System.String)">
+            <summary>
+            导出Excel
+            </summary>
+            <param name="dataTable"></param>
+            <param name="fileName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.DataTableToExcel(System.Data.DataTable,ExcelVerify.DesignDelegate,System.String)">
+            <summary>
+            导出Excel
+            </summary>
+            <param name="dataTable"></param>
+            <param name="fileName"></param>
+            <returns></returns>
+        </member>
         <member name="M:ExcelVerify.ExcelVerifiyHelper.EntityToExcel``1(System.Collections.Generic.List{``0},System.Collections.Generic.List{ExcelVerify.MapConfig},System.String)">
             <summary>
             导出Excel
@@ -480,6 +496,14 @@
             </summary>
             <param name="dataTable"></param>
             <param name="mapConfigs">映射</param>
+            <returns></returns>
+        </member>
+        <member name="M:ExcelVerify.ExcelVerifiyHelper.PropertyMapToDataTable(System.Data.DataTable,ExcelVerify.DesignDelegate)">
+            <summary>
+            映射实体属性名到DataTable
+            </summary>
+            <param name="dataTable"></param>
+            <param name="mapConfig">映射</param>
             <returns></returns>
         </member>
         <member name="M:ExcelVerify.ExcelVerifiyHelper.ConvertMapToEntity``1(System.Data.DataTable,System.Collections.Generic.List{ExcelVerify.MapConfig})">
